@@ -1,0 +1,2 @@
+rootProject.name = "hit_run_car"
+include ':app'
