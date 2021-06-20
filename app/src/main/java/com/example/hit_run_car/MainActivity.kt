@@ -1,10 +1,12 @@
 package com.example.hit_run_car
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.database.Cursor
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
@@ -19,6 +21,7 @@ import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
+import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
@@ -29,17 +32,23 @@ import com.gun0912.tedpermission.PermissionListener
 import com.gun0912.tedpermission.TedPermission
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.fragment_report.*
+import okhttp3.*
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody.Companion.asRequestBody
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.concurrent.thread
 
 
 class MainActivity : AppCompatActivity() {
-    val urls = "http://34.64.237.147:5000"
+    val urls = "http://34.64.237.147:5000/predict"
     val OPEN_GALLETY = 2
     val REQUEST_IMAGE_CAPTURE = 1
+    var CheckImageSelected = 0
+    lateinit var reportResult : String
     lateinit var currentPhotoPath : String
     val REQUIRED_PERMISSIONS = arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
     val PERMISSIONS_REQUEST_CODE = 100
@@ -52,8 +61,7 @@ class MainActivity : AppCompatActivity() {
 
         settingPermission() // 권한체크 시작
         ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, PERMISSIONS_REQUEST_CODE)
-
-//        send_image.isEnabled = false
+        btn_analysis.isEnabled = false
         val reportIntent = Intent(this, reportActivity::class.java)
 
         btn_take_picture.setOnClickListener {
@@ -63,10 +71,59 @@ class MainActivity : AppCompatActivity() {
             openGallery()
         }
         btn_analysis.setOnClickListener{
+            connectServer()
             startActivity(reportIntent)
         }
 
     }
+
+    private fun connectServer() {
+        if (CheckImageSelected == 0) {
+            Toast.makeText(this@MainActivity, "선택된 사진이 없습니다.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        Toast.makeText(this@MainActivity, "사진을 서버로 보내는 중입니다.", Toast.LENGTH_SHORT).show()
+        var imgfile : File = File(currentPhotoPath)
+        val postBodyImage : RequestBody = MultipartBody.Builder().setType(MultipartBody.FORM).addFormDataPart(
+            "file", "androidToFlask.jpg",
+            imgfile.asRequestBody("image/jpg".toMediaTypeOrNull())
+        ).build()
+        thread(start = true) {
+            postRequest(postBodyImage)
+        }
+    }
+
+    @SuppressLint("SetTextI18n")
+    fun postRequest(postBody: RequestBody) {
+        val client = OkHttpClient()
+        val request  = Request.Builder()
+            .url(urls)
+            .post(postBody)
+            .build();
+        val call : Call = client.newCall(request)
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                call.cancel()
+                runOnUiThread {
+                    Toast.makeText(this@MainActivity, "서버접속에 실패하였습니다.", Toast.LENGTH_SHORT).show()
+                }
+            }
+
+            @Throws(IOException::class)
+            override fun onResponse(call: Call, response: Response) {
+                runOnUiThread {
+                    reportResult = response?.body?.string().toString().split('"')[7]
+                    Toast.makeText(this@MainActivity, reportResult, Toast.LENGTH_SHORT).show()
+                    try {
+                        println(reportResult)
+                    } catch (e: IOException) {
+                        e.printStackTrace()
+                    }
+                }
+            }
+        })
+    }
+
     private fun openGallery () {
         val intent: Intent = Intent(Intent.ACTION_GET_CONTENT)
         intent.setType("image/*")
@@ -93,12 +150,13 @@ class MainActivity : AppCompatActivity() {
             .setRationaleMessage("카메라 사진 권한 필요")
             .setDeniedMessage("카메라 권한 요청 거부")
             .setPermissions(
-                android.Manifest.permission.WRITE_EXTERNAL_STORAGE,
-//                android.Manifest.permission.READ_EXTERNAL_STORAGE,
-                android.Manifest.permission.CAMERA)
+                Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                Manifest.permission.READ_EXTERNAL_STORAGE,
+                Manifest.permission.CAMERA)
             .check()
     }
 
+    @SuppressLint("QueryPermissionsNeeded")
     private fun startCapture(){
         Intent(MediaStore.ACTION_IMAGE_CAPTURE).also { takePictureIntent ->
             takePictureIntent.resolveActivity(packageManager)?.also {
@@ -120,6 +178,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    @SuppressLint("SimpleDateFormat")
     @Throws(IOException::class)
     private fun createImageFile() : File{
         val timeStamp : String = SimpleDateFormat("yyyyMMdd_HHmmss").format(Date())
@@ -158,8 +217,9 @@ class MainActivity : AppCompatActivity() {
                     exifOrientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION,
                         ExifInterface.ORIENTATION_NORMAL)
                     exifDegree = exifOrientationToDegree(exifOrientation)
-//                    send_image.isEnabled = true
                     imageView.setImageBitmap(rotate(bitmap, exifDegree))
+                    btn_analysis.isEnabled = true
+                    CheckImageSelected = 1
                 }catch (e : IOException){
                     e.printStackTrace()
                 }
@@ -167,13 +227,15 @@ class MainActivity : AppCompatActivity() {
             else if (requestCode == OPEN_GALLETY) {
                 var currentImageUrl : Uri? = data?.data
                 try {
+                    CheckImageSelected = 1
+                    btn_analysis.isEnabled = true
+                    currentPhotoPath = currentImageUrl?.let { getPathFromURI(this, it) }.toString()
                     var inputstream : InputStream? = contentResolver.openInputStream(currentImageUrl!!)
                     val bitmap = MediaStore.Images.Media.getBitmap(contentResolver, currentImageUrl)
                     exif = ExifInterface(inputstream!!)
                     exifOrientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION,
                         ExifInterface.ORIENTATION_NORMAL)
                     exifDegree = exifOrientationToDegree(exifOrientation)
-//                    send_image.isEnabled = true
                     imageView.setImageBitmap(rotate(bitmap, exifDegree))
 
                 }catch (e:Exception) {
@@ -370,5 +432,34 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+    //Uri로 부터 절대경로 알아내는 함수
+    private  fun  getPathFromURI(context: Context, uri: Uri) : String? {
+        var fullPath: String? = null
+        val column = "_data"
+        var cursor: Cursor? = context.getContentResolver().query(uri, null, null, null, null)
+        if (cursor != null) {
+            cursor.moveToFirst()
+            var document_id: String = cursor.getString(0)
+            document_id = document_id.substring(document_id.lastIndexOf(":") + 1)
+            cursor.close()
+            val projection = arrayOf(column)
+            try {
+                cursor = context.contentResolver.query(
+                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                    projection,
+                    MediaStore.Images.Media._ID + " = ? ",
+                    arrayOf(document_id),
+                    null
+                )
+                if (cursor != null) {
+                    cursor.moveToFirst()
+                    fullPath = cursor.getString(cursor.getColumnIndexOrThrow(column))
+                }
+            } finally {
+                if (cursor != null) cursor.close()
+            }
+        }
+        return fullPath
     }
 }
