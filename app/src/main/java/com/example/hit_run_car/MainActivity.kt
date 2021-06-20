@@ -43,6 +43,9 @@ class MainActivity : AppCompatActivity() {
     lateinit var currentPhotoPath : String
     val REQUIRED_PERMISSIONS = arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
     val PERMISSIONS_REQUEST_CODE = 100
+    lateinit var reportDatetime : String
+    lateinit var reportAddress : String
+    lateinit var reportBitmap: Bitmap
 
 
 
@@ -63,6 +66,10 @@ class MainActivity : AppCompatActivity() {
             openGallery()
         }
         btn_analysis.setOnClickListener{
+            reportIntent.putExtra("datetime", reportDatetime)
+            reportIntent.putExtra("address", reportAddress)
+//            reportIntent.putExtra("bitmap", reportBitmap)
+
             startActivity(reportIntent)
         }
 
@@ -159,7 +166,8 @@ class MainActivity : AppCompatActivity() {
                         ExifInterface.ORIENTATION_NORMAL)
                     exifDegree = exifOrientationToDegree(exifOrientation)
 //                    send_image.isEnabled = true
-                    imageView.setImageBitmap(rotate(bitmap, exifDegree))
+                    reportBitmap = rotate(bitmap,exifDegree)
+                    imageView.setImageBitmap(reportBitmap)
                 }catch (e : IOException){
                     e.printStackTrace()
                 }
@@ -174,14 +182,13 @@ class MainActivity : AppCompatActivity() {
                         ExifInterface.ORIENTATION_NORMAL)
                     exifDegree = exifOrientationToDegree(exifOrientation)
 //                    send_image.isEnabled = true
-                    imageView.setImageBitmap(rotate(bitmap, exifDegree))
+                    reportBitmap = rotate(bitmap,exifDegree)
+                    imageView.setImageBitmap(reportBitmap)
 
                 }catch (e:Exception) {
                     e.printStackTrace()
                 }
             }
-            println(exif.getAttribute(ExifInterface.TAG_GPS_LATITUDE).toString())
-            println("here")
             if (exif != null) {
                 exifDatetime  = exif.getAttribute(ExifInterface.TAG_DATETIME)
 
@@ -192,11 +199,10 @@ class MainActivity : AppCompatActivity() {
                     exifLatitude_ref = exif.getAttribute(ExifInterface.TAG_GPS_LATITUDE_REF).toString()
                     exifLongitude = exif.getAttribute(ExifInterface.TAG_GPS_LONGITUDE).toString()
                     exifLongitude_ref = exif.getAttribute(ExifInterface.TAG_GPS_LONGITUDE_REF).toString()
-                    Log.d("pictures metadata : ", exifLatitude+"\n")
-                    Log.d("pictures metadata : ", exifLatitude_ref+"\n")
-                    Log.d("pictures metadata : ", exifLongitude+"\n")
-                    Log.d("pictures metadata : ", exifLongitude_ref+"\n")
-
+//                    Log.d("pictures metadata : ", exifLatitude+"\n")
+//                    Log.d("pictures metadata : ", exifLatitude_ref+"\n")
+//                    Log.d("pictures metadata : ", exifLongitude+"\n")
+//                    Log.d("pictures metadata : ", exifLongitude_ref+"\n")
 
                     if (exifLatitude_ref.equals("N")) {
                         latitude = convertToDegree(exifLatitude);
@@ -225,12 +231,14 @@ class MainActivity : AppCompatActivity() {
                     if(mResultList != null){
                         Log.d("picture's 주소", mResultList[0].getAddressLine(0))
                     }
+
                 }
             }
             Log.d("picture's datetime : ", exifDatetime.toString())
-
-            photo_date_value.text = (exifDatetime).toString()
-            photo_location_value.text = mResultList?.get(0)?.getAddressLine(0)
+            reportDatetime = (exifDatetime).toString()
+            reportAddress = mResultList?.get(0)?.getAddressLine(0).toString()
+            photo_date_value.text = reportDatetime
+            photo_location_value.text = reportAddress
         }
 
     }
