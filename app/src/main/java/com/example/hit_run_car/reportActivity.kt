@@ -1,13 +1,18 @@
 package com.example.hit_run_car
 
+import android.content.ContentUris
+import android.content.Intent
+import android.database.Cursor
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
-import androidx.appcompat.app.AppCompatActivity
+import android.net.Uri
 import android.os.Bundle
+import android.provider.MediaStore
 import android.util.Log
-import kotlinx.android.synthetic.main.activity_main.*
+import androidx.appcompat.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_report.*
+
 
 class reportActivity : AppCompatActivity() {
     lateinit var reportDatetime : String
@@ -15,6 +20,7 @@ class reportActivity : AppCompatActivity() {
     lateinit var reportResult : String
     var reportDegree : Int = 0
     lateinit var currentPhotoPath : String
+    var currentImageUri: Uri? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -32,6 +38,27 @@ class reportActivity : AppCompatActivity() {
 
         val bitmap = BitmapFactory.decodeFile(currentPhotoPath)
         imageView2.setImageBitmap(rotate(bitmap, reportDegree))
+
+        currentImageUri = getUriFromPath(currentPhotoPath)
+
+        btn_report.setOnClickListener{
+            if(currentImageUri != null){
+                sendMmsIntent()
+            }
+        }
+    }
+
+    private fun sendMmsIntent() {
+        try{
+            val sendIntent = Intent(Intent.ACTION_SEND)
+            sendIntent.putExtra("exit_on_sent",true)
+            sendIntent.putExtra(Intent.EXTRA_STREAM,currentImageUri)
+            sendIntent.type = "image/*"
+            sendIntent.putExtra(Intent.EXTRA_TEXT,"차종 : " + reportResult + "\n시각 : " + reportDatetime + "\n위치정보 : " + reportaddress + "\n해당차량 도주중.")
+            startActivity(sendIntent)
+        }catch(e: Exception){
+            e.printStackTrace()
+        }
     }
 
     private fun rotate(bitmap: Bitmap, degree: Int): Bitmap? {
@@ -39,5 +66,18 @@ class reportActivity : AppCompatActivity() {
         val matrix = Matrix()
         matrix.postRotate(degree.toFloat())
         return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix,true)
+    }
+
+    fun getUriFromPath(filePath: String): Uri? {
+        val cursor: Cursor? = contentResolver.query(
+            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+            null, "_data = '$filePath'", null, null
+        )
+        if (cursor != null) {
+            cursor.moveToNext()
+        }
+
+        val id: Int = cursor?.getInt(cursor.getColumnIndex("_id"))!!
+        return ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,id.toLong())
     }
 }

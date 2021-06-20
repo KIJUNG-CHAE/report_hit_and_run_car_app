@@ -84,7 +84,7 @@ class MainActivity : AppCompatActivity() {
                 reportIntent.putExtra("path",currentPhotoPath)
                 reportIntent.putExtra("result",reportResult)
                 startActivity(reportIntent)
-            }, 5000)
+            }, 4000)
 
         }
 
