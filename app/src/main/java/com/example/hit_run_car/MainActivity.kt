@@ -19,9 +19,9 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
+import android.os.Handler
 import android.provider.MediaStore
 import android.util.Log
-import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
@@ -40,7 +40,6 @@ import java.io.IOException
 import java.io.InputStream
 import java.text.SimpleDateFormat
 import java.util.*
-import kotlin.concurrent.thread
 
 
 class MainActivity : AppCompatActivity() {
@@ -48,11 +47,13 @@ class MainActivity : AppCompatActivity() {
     val OPEN_GALLETY = 2
     val REQUEST_IMAGE_CAPTURE = 1
     var CheckImageSelected = 0
-    lateinit var reportResult : String
+    lateinit var reportDatetime : String
+    lateinit var reportaddress : String
+    var reportResult : String = "default"
+    var reportDegree : Int = 0
     lateinit var currentPhotoPath : String
     val REQUIRED_PERMISSIONS = arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
     val PERMISSIONS_REQUEST_CODE = 100
-
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -62,6 +63,7 @@ class MainActivity : AppCompatActivity() {
         settingPermission() // 권한체크 시작
         ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, PERMISSIONS_REQUEST_CODE)
         btn_analysis.isEnabled = false
+
         val reportIntent = Intent(this, reportActivity::class.java)
 
         btn_take_picture.setOnClickListener {
@@ -72,7 +74,18 @@ class MainActivity : AppCompatActivity() {
         }
         btn_analysis.setOnClickListener{
             connectServer()
-            startActivity(reportIntent)
+
+
+            val handler = Handler()
+            handler.postDelayed({ // 5초 뒤에 작동!! -> 5s = 5000ms
+                reportIntent.putExtra("datetime",reportDatetime)
+                reportIntent.putExtra("address",reportaddress)
+                reportIntent.putExtra("degree",reportDegree)
+                reportIntent.putExtra("path",currentPhotoPath)
+                reportIntent.putExtra("result",reportResult)
+                startActivity(reportIntent)
+            }, 5000)
+
         }
 
     }
@@ -88,9 +101,23 @@ class MainActivity : AppCompatActivity() {
             "file", "androidToFlask.jpg",
             imgfile.asRequestBody("image/jpg".toMediaTypeOrNull())
         ).build()
-        thread(start = true) {
-            postRequest(postBodyImage)
+
+        class WorkerThread : Thread() {
+            override fun run() {
+                postRequest(postBodyImage)
+            }
         }
+        val thread = WorkerThread()
+        thread.start()
+
+        try {
+            thread.join()
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
+
+
+
     }
 
     @SuppressLint("SetTextI18n")
@@ -120,8 +147,13 @@ class MainActivity : AppCompatActivity() {
                         e.printStackTrace()
                     }
                 }
+
+
+
+
             }
         })
+
     }
 
     private fun openGallery () {
@@ -291,8 +323,11 @@ class MainActivity : AppCompatActivity() {
             }
             Log.d("picture's datetime : ", exifDatetime.toString())
 
-            photo_date_value.text = (exifDatetime).toString()
-            photo_location_value.text = mResultList?.get(0)?.getAddressLine(0)
+            reportDegree = exifDegree
+            reportDatetime = (exifDatetime).toString()
+            reportaddress = mResultList?.get(0)?.getAddressLine(0).toString()
+            photo_date_value.text = reportDatetime
+            photo_location_value.text = reportaddress
         }
 
     }
