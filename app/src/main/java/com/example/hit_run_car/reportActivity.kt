@@ -1,17 +1,16 @@
 package com.example.hit_run_car
 
-import android.content.ContentUris
 import android.content.Intent
-import android.database.Cursor
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import android.net.Uri
 import android.os.Bundle
-import android.provider.MediaStore
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.net.toUri
 import kotlinx.android.synthetic.main.activity_report.*
+import java.io.File
 
 
 class reportActivity : AppCompatActivity() {
@@ -35,7 +34,8 @@ class reportActivity : AppCompatActivity() {
         car_time_textView.text = "시각 : " + reportDatetime
         car_location_textView.text = "위치정보 : " + reportaddress
         car_type_textView.text = "차종 : " + reportResult
-
+        println(currentPhotoPath)
+        println("here????")
         val bitmap = BitmapFactory.decodeFile(currentPhotoPath)
         imageView2.setImageBitmap(rotate(bitmap, reportDegree))
 
@@ -68,16 +68,9 @@ class reportActivity : AppCompatActivity() {
         return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix,true)
     }
 
-    fun getUriFromPath(filePath: String): Uri? {
-        val cursor: Cursor? = contentResolver.query(
-            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-            null, "_data = '$filePath'", null, null
-        )
-        if (cursor != null) {
-            cursor.moveToNext()
-        }
-
-        val id: Int = cursor?.getInt(cursor.getColumnIndex("_id"))!!
-        return ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,id.toLong())
+    private fun getUriFromPath(filePath: String): Uri? {
+        val file: File = File(filePath)
+        return file.toUri()
     }
+
 }
