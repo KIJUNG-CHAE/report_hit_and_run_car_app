@@ -15,9 +15,36 @@
         android:layout_marginEnd="8dp"
         android:layout_marginBottom="8dp"
         android:text="뺑소니 차량 판별 앱"
-        android:textSize="30dp"
+        android:textSize="30sp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/btn_take_picture"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="16dp"
+        android:text="촬영하기"
+        android:textSize="25sp"
+        app:layout_constraintBottom_toTopOf="@+id/imageView"
+        app:layout_constraintEnd_toStartOf="@id/btn_bring_picture"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/title_text" />
+
+    <Button
+        android:id="@+id/btn_bring_picture"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:text="사진 가져오기"
+        android:textSize="25sp"
+        app:layout_constraintBottom_toTopOf="@+id/imageView"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/btn_take_picture"
+        app:layout_constraintTop_toBottomOf="@id/title_text"/>
 
     <ImageView
         android:id="@+id/imageView"
@@ -28,21 +55,8 @@
         android:layout_marginEnd="16dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/title_text"
-        app:srcCompat="@android:drawable/ic_menu_gallery" />
-
-    <TextView
-        android:id="@+id/photo_name"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginEnd="8dp"
-        android:layout_marginBottom="8dp"
-        android:text="photo_name"
-        android:textSize="30dp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/imageView" />
+        app:layout_constraintTop_toBottomOf="@+id/btn_take_picture"
+        app:srcCompat="@android:drawable/ic_menu_gallery"/>
 
     <TextView
         android:id="@+id/photo_date"
@@ -52,45 +66,61 @@
         android:layout_marginTop="8dp"
         android:layout_marginEnd="8dp"
         android:layout_marginBottom="8dp"
-        android:text="photo_date"
+        android:text="발생시각 : "
         android:textSize="30dp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/photo_name" />
+        app:layout_constraintTop_toBottomOf="@id/imageView" />
+
     <TextView
-        android:id="@+id/predict_class_name"
+        android:id="@+id/photo_date_value"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"
+        android:text="default"
+        android:textSize="30dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toEndOf="@id/photo_date"
+        app:layout_constraintTop_toBottomOf="@id/imageView" />
+
+    <TextView
+        android:id="@+id/photo_location"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
         android:layout_marginTop="8dp"
         android:layout_marginEnd="8dp"
         android:layout_marginBottom="8dp"
-        android:text="predict_class"
+        android:text="발생위치 : "
         android:textSize="30dp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/photo_date" />
+        app:layout_constraintTop_toBottomOf="@id/photo_date_value" />
+
     <TextView
-        android:id="@+id/now_location"
-        android:layout_width="wrap_content"
+        android:id="@+id/photo_location_value"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
         android:layout_marginTop="8dp"
         android:layout_marginEnd="8dp"
-        android:layout_marginBottom="8dp"
-        android:text="now_location"
+        android:text="default"
         android:textSize="30dp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/predict_class_name" />
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/photo_location"
+        app:layout_constraintTop_toBottomOf="@id/photo_date_value" />
+
     <Button
+        android:id="@+id/btn_analysis"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="신고하기"
-        android:textSize="35dp"
         android:layout_marginStart="8dp"
         android:layout_marginTop="8dp"
         android:layout_marginEnd="8dp"
         android:layout_marginBottom="8dp"
-        app:layout_constraintStart_toEndOf="parent"
+        android:text="차종 분석"
+        android:textSize="35sp"
         app:layout_constraintBottom_toBottomOf="parent"/>
-
 
 </androidx.constraintlayout.widget.ConstraintLayout>
